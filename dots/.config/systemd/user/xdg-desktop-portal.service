@@ -1,0 +1,9 @@
+[Unit]
+Description=Portal service
+Documentation=DESKTOP_RESTORE_NOTES.md
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.portal.Desktop
+ExecStart=/usr/lib/xdg-desktop-portal
+Slice=session.slice

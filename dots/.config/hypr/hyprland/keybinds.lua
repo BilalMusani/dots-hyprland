@@ -29,11 +29,11 @@ hl.bind("SUPER + B", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + O", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { description = "Shell: Toggle right sidebar" })
 hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
-hl.bind("SUPER + K", hl.dsp.global("quickshell:oskToggle"), { description = "Shell: Toggle on-screen keyboard" })
+hl.bind("SUPER + SHIFT + K", hl.dsp.global("quickshell:oskToggle"), { description = "Shell: Toggle on-screen keyboard" })
 hl.bind("SUPER + M", hl.dsp.global("quickshell:mediaControlsToggle"), { description = "Shell: Toggle media controls" })
 hl.bind("SUPER + G", hl.dsp.global("quickshell:overlayToggle"), { description = "Shell: Toggle widget overlay" })
 hl.bind("CTRL + ALT + Delete", hl.dsp.global("quickshell:sessionToggle"), { description = "Shell: Toggle session menu" })
-hl.bind("SUPER + J", hl.dsp.global("quickshell:barToggle"), { description = "Shell: Toggle bar" })
+hl.bind("CTRL + SUPER + J", hl.dsp.global("quickshell:barToggle"), { description = "Shell: Toggle bar" })
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd(qsIsAlive .. " || pkill wlogout || wlogout -p layer-shell"))
 hl.bind("SHIFT + SUPER + ALT + Slash", hl.dsp.exec_cmd("qs -p $HOME/.config/quickshell/$qsConfig/welcome.qml"))
 
@@ -164,12 +164,28 @@ for i = 1, 2 do
     local focusdir = { "l", "r" }
     hl.bind("SUPER + " .. arrowkey[i], hl.dsp.focus({ direction = focusdir[i] }))
 end
---#/# bind = SUPER + SHIFT, ←/↑/→/↓,, -- Move in direction
+--#/# bind = SUPER + SHIFT, ←/↑/→/↓,, -- Resize in direction
 for i = 1, 4 do
     local arrowkey = { "Left", "Right", "Up", "Down" }
-    local focusdir = { "l", "r", "u", "d" }
-    hl.bind("SUPER + SHIFT + " .. arrowkey[i], hl.dsp.window.move({ direction = focusdir[i] }),
-        { description = "Window: Move " .. arrowkey[i] })
+    local resize = {
+        { x = -100, y = 0, relative = true },
+        { x = 100, y = 0, relative = true },
+        { x = 0, y = -100, relative = true },
+        { x = 0, y = 100, relative = true }
+    }
+    hl.bind("SUPER + SHIFT + " .. arrowkey[i], hl.dsp.window.resize(resize[i]),
+        { repeating = true, description = "Window: Resize " .. arrowkey[i] })
+end
+
+hl.bind("SUPER + H", hl.dsp.layout("swapsplit"), { description = "Window: Swap split horizontally" })
+hl.bind("SUPER + L", hl.dsp.layout("swapsplit"), { description = "Window: Swap split horizontally" })
+hl.bind("SUPER + J", hl.dsp.layout("togglesplit"), { description = "Window: Toggle vertical split" })
+hl.bind("SUPER + K", hl.dsp.layout("togglesplit"), { description = "Window: Toggle vertical split" })
+for i = 1, 4 do
+    local arrowkey = { "Left", "Right", "Up", "Down" }
+    local swapdir = { "l", "r", "u", "d" }
+    hl.bind("SUPER + ALT + " .. arrowkey[i], hl.dsp.window.swap({ direction = swapdir[i] }),
+        { description = "Window: Swap " .. arrowkey[i] })
 end
 
 hl.bind("ALT + F4",
@@ -195,19 +211,16 @@ hl.bind("SUPER + ALT + F", hl.dsp.window.fullscreen_state({ internal = 0, client
     { description = "Window: Fullscreen spoof" })
 hl.bind("SUPER + P", hl.dsp.window.pin(), { description = "Window: Pin" })
 
---#/# bind = SUPER+ALT, Hash,, -- Send to workspace -- (1, 2, 3,...)
+--#/# bind = SUPER+SHIFT, Hash,, -- Send to workspace -- (1, 2, 3,...)
 for i = 1, 10 do
-    hl.bind("SUPER + ALT + " .. (i % 10), function()
-        hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = false }))
-    end, { description = "Window: Send to workspace " .. i })
+    hl.bind("SUPER + SHIFT + " .. (i % 10), hl.dsp.window.move({ workspace = i, follow = false }),
+        { description = "Window: Send active app to workspace " .. i })
 end
---# We also use raw keycodes because some keyboard layouts register number keys as different chars. The codes can be verified with `wev`
--- for i = 1, 10 do
---     local numberkey = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }
---     hl.bind("SUPER + ALT + code:" .. numberkey[i], function()
---         hl.dispatch(hl.dsp.window.move({ workspace = workspace_in_group(i), follow = false }))
---     end)
--- end
+--# Some keyboard paths report Shift+number as the shifted symbol instead of the base number.
+for i = 1, 10 do
+    local shiftedNumber = { "exclam", "at", "numbersign", "dollar", "percent", "asciicircum", "ampersand", "asterisk", "parenleft", "parenright" }
+    hl.bind("SUPER + " .. shiftedNumber[i], hl.dsp.window.move({ workspace = i, follow = false }))
+end
 --# keypad numbers
 for i = 1, 10 do
     local numpadkey = { 87, 88, 89, 83, 84, 85, 79, 80, 81, 90 }
@@ -332,9 +345,8 @@ hl.bind("SUPER + ALT + Equal",
     hl.dsp.exec_cmd("notify-send 'Urgent notification' 'Ah hell no' -u critical -a 'Hyprland keybind'")) -- # [hidden]
 
 --##! Session
-hl.bind("SUPER + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Session: Lock" })
-hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"),
-    { locked = true, description = "Session: Sleep" }) -- Sleep
+hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("loginctl lock-session"),
+    { locked = true, description = "Session: Lock" })
 -- hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"), {locked = true} ) -- # [hidden] Suspend when laptop lid is closed, uncomment if for whatever reason it's not the default behavior
 
 hl.bind("CTRL + SHIFT + ALT + SUPER + Delete", hl.dsp.exec_cmd("systemctl poweroff || loginctl poweroff"),
